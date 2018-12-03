@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+    Movies - home
+{% endblock %}
+{% block body %}
+    <div class="container">
+        <div class="page">
+            <div class="breadcrumbs">
+                <span>Movies</span>
+            </div>
+            <div class="movie-list">
+                {% for movie in object_list %}
+                    <div class="movie">
+                        <figure class="movie-poster"><img src="{{ movie.poster.url }}" alt="#">
+                        </figure>
+                        <div class="movie-title"><a href="{% url 'review-detail' pk=movie.id %}">{{ movie.title }}</a>
+                        </div>
+                        <p>{{ movie.summary|truncatechars:50 }}</p>
+                        {% if user.is_authenticated and user.is_staff %}
+                            <a href="{% url 'review-edit' pk=movie.id %}">Edit</a>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <h3>There are no records</h3>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

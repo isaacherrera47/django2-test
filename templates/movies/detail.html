@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+    Movie - {{ object.title }}
+{% endblock %}
+{% block body %}
+    <div class="container">
+        <div class="page">
+            <div class="breadcrumbs">
+                <a href="{% url 'review-list' %}">Home</a>
+                <span>{{ object.title }}</span>
+            </div>
+            <div class="content">
+                <div class="row">
+                    <div class="col-md-6">
+                        <figure class="movie-poster"><img src="{{ object.poster.url }}" alt="#">
+                        </figure>
+                    </div>
+                    <div class="col-md-6">
+                        <h2 class="movie-title">{{ object.title }}</h2>
+                        <div class="movie-summary">
+                            <h3>Summary:</h3>
+                            <p>{{ object.summary }}</p>
+                        </div>
+                        <ul class="movie-meta">
+                            <li><strong>Release date:</strong> {{ object.release_date|date }}</li>
+                        </ul>
+                        <ul class="starring">
+                            <li><strong>Added by: </strong>{{ object.user.username }}</li>
+                        </ul>
+                    </div>
+                </div> <!-- .row -->
+                <div class="entry-content">
+                    <h3>Review: </h3>
+                    <p>{{ object.review }}</p>
+                    {% if user.is_authenticated and user.is_staff %}
+                        <a href="{% url 'review-edit' pk=object.id %}">Edit</a>
+                    {% endif %}
+                </div>
+                <div class="entry-content" id="comments">
+                    <h3>Comments</h3>
+                </div>
+                <div class="row">
+                    <div class="col-md4">
+                        {% if user.is_authenticated %}
+                            <div class="contact-form">
+                                <p><b>Leave a comment</b></p>
+                                <form id="post_comment">
+                                    <textarea id="comment_field" class="message" placeholder="Comment"></textarea>
+                                    <input type="submit" value="Post comment ">
+                                </form>
+                            </div>
+                        {% else %}
+                            <a href="{% url 'login' %}">You must be logged to post a comment</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- .container -->
+{% endblock %}
+{% block js %}
+    <script>
+        let urlReview = "{% url 'api:review-detail' pk=object.id %}";
+        let urlComments = "{% url 'api:comments' %}";
+        let idReview = "{{ object.id }}";
+        let idUser = 0;
+        let csrftoken = getCookie('csrftoken');
+        {% if user.is_authenticated %}
+            idUser = "{{ user.id }}";
+        {% endif %}
+        $.ajax({
+            url: location.origin + urlReview,
+            method: 'GET',
+        }).done(function (result) {
+            for (let x = 0; x < result.comments.length; x++) {
+                let comments = result.comments;
+                $('#comments').append("<p>-> " + comments[x].comment + "</p>");
+            }
+        });
+        $('#post_comment').on('submit', function (e) {
+            e.preventDefault();
+            let comment = $('#comment_field').val();
+            $.ajax({
+                url: location.origin + urlComments,
+                method: 'POST',
+                data: {comment: comment, user: idUser, review: idReview},
+                beforeSend: function (xhr, settings) {
+                    if (!this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            }).done(function (result) {
+                $('#comments').append("<p>-> " + result.comment + "</p>");
+                $('#comment_field').val('');
+            });
+        });
+
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+    </script>
+{% endblock %}
